@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-TW" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>SRG-A CGI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- 添加 viewport -->
+  <style>
+    /* 基本樣式 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 10px;
+      padding: 0;
+      background-color: #333;
+      color: #EEE;
+    }
+
+
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    button {
+      padding: 8px 15px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
+      margin-right: 10px;
+      background-color: #666; /* 更改按鈕背景色 */
+      color: #FFF; /* 更改按鈕文字顏色 */
+      width: 80px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 150px;
+    }
+
+    button:hover {
+      background-color: #9999FF;
+      color: #000; /* 更改按鈕文字顏色 */
+    }
+
+    button:focus {
+      outline: none;
+    }
+
+    /* 添加间距 */
+    #presetButtons input {
+      margin: 3px; /* 調整所需的間距大小 */
+    }
+    /* 设置输入框的宽度 */
+    #quantity {
+      width: 50px; /* 根据需要设置更短的宽度 */
+    }
+
+    .buttonRow {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 5px;
+      flex-direction: row;
+    }
+
+    .buttonRow input {
+      padding: 4px 15px;
+      border: none;
+      cursor: pointer;
+      margin: 3px;
+      width: 60px; /* 設定按鈕的寬度 */
+      font-size: 12px;
+      background-color: #444; /* 更改按鈕背景色 */
+      color: #AFA; /* 更改按鈕文字顏色 */
+    }
+
+
+    button[data-mode='on'],
+    button[data-mode='off'],
+    button[data-shot-mode='fullbody'],
+    button[data-shot-mode='waist'],
+    button[data-shot-mode='closeup'] {
+      padding: 4px 15px;
+      border: none;
+      cursor: pointer;
+      width: 72px;
+      font-size: 14px;
+      border-radius: 5px;
+      margin-right: 5px;
+    }
+
+    button[data-mode='on'] {
+      background-color: #080; /* ON 按鈕的預設背景色為暗綠色 */
+    }
+
+    button[data-mode='off'] {
+      background-color: #800; /* OFF 按鈕的預設背景色為暗紅色 */
+    }
+
+    button[data-mode='on']:not(:hover) {
+      color: #000; /* ON 按鈕的文字顏色為黑色 */
+    }
+
+    button[data-mode='off']:not(:hover) {
+      color: #000; /* OFF 按鈕的文字顏色為黑色 */
+    }
+
+    button[data-shot-mode='fullbody'] {
+      background-color: #444; /* 全身按鈕的預設背景色 */
+      color: #AFA; /* 全身按鈕的文字顏色 */
+    }
+
+    button[data-shot-mode='waist'] {
+      background-color: #444; /* 半身按鈕的預設背景色 */
+      color: #AFA; /* 半身按鈕的文字顏色 */
+    }
+
+    button[data-shot-mode='closeup'] {
+      background-color: #444; /* 特寫按鈕的預設背景色 */
+      color: #AFA; /* 特寫按鈕的文字顏色 */
+    }
+
+    /* 響應式設計 */
+    @media screen and (max-width: 600px) {
+      body {
+        margin: 10px; /* 調整邊距 */
+      }
+
+      label {
+        font-size: 14px; /* 調整標籤字體大小 */
+      }
+
+      input[type="text"],
+      input[type="number"],
+      button,
+      #quantity {
+        margin-bottom: 1px; /* 增加間距 */
+      }
+
+  </style>
+</head>
+<body>
+
+<!-- 攝影機 IP -->
+<label for="ipAddress"><a href="#" target="_blank" id="cameraLink"><font color="White">攝影機 IP</font></a> :</label>
+<input type="text" id="ipAddress" placeholder="輸入 IP 位置" value="192.168.0.213"><br><br>
+
+<!-- 自動取景功能 -->
+自 動 取 景⠀
+<button onclick="sendAutoFramingCommand('on')" data-mode="on"> ON </button>
+<button onclick="sendAutoFramingCommand('off')" data-mode="off"> OFF </button>
+<br><br>
+
+<!-- 拍攝構圖模式 -->
+拍 攝 構 圖⠀
+<button onclick="sendCommands('fullbody', 'height3')" data-shot-mode="fullbody">全身</button>
+<button onclick="sendCommands('waist', 'height4')" data-shot-mode="waist">半身</button>
+<button onclick="sendCommands('closeup', 'height1')" data-shot-mode="closeup">特寫</button>
+<br><br><hr><br>
+
+<!-- 呼叫預設位置 -->
+<label for="quantity">預設位置數量：</label>
+<input type="number" id="quantity" placeholder="請輸入數量" value="10" min="1" max="100"> <!-- 設置最小值為1，最大值為100 -->
+<br><br>
+<div id="presetButtons"></div>
+
+
+<script>
+  // 當文檔加載時，設置攝影機 IP 為超連結
+  window.addEventListener('load', function() {
+    const link = document.getElementById('cameraLink');
+    const ipAddressInput = document.getElementById('ipAddress');
+
+    // 點擊時在新分頁中打開連結
+    link.addEventListener('click', function(event) {
+      event.preventDefault();
+      const ipAddress = ipAddressInput.value.trim() || '192.168.0.213';
+      window.open(`http://${ipAddress}`, '_blank');
+    });
+  });
+
+
+    function sendPresetWithDelay(presetNumber) {
+      // Your existing function code for sending presets with delay
+      // ...
+    }
+
+    function generateButtons() {
+      const quantity = document.getElementById('quantity').value;
+      const presetButtonsContainer = document.getElementById('presetButtons');
+      presetButtonsContainer.innerHTML = ''; // Clear previous buttons
+
+      let currentRow = document.createElement('div');
+      currentRow.classList.add('buttonRow');
+
+      for (let i = 1; i <= quantity; i++) {
+        const button = document.createElement('input');
+        button.setAttribute('type', 'button');
+        button.setAttribute('value', ` ${i} `);
+        button.setAttribute('onclick', `sendPresetWithDelay(${i})`);
+
+        currentRow.appendChild(button);
+
+        if (i % 5 === 0 || i === +quantity) { // 換行的條件：達到5的倍數或是達到輸入的數量
+          presetButtonsContainer.appendChild(currentRow);
+          currentRow = document.createElement('div');
+          currentRow.classList.add('buttonRow');
+        }
+      }
+    }
+
+    // Listen for changes in the quantity input field
+    document.getElementById('quantity').addEventListener('input', function() {
+      // 限制輸入值的最大值為100
+      if (this.value > 100) {
+        this.value = 100;
+      }
+      generateButtons(); // Update buttons when quantity changes
+    });
+
+    // Initial generation of buttons with default quantity
+    generateButtons();
+
+    // Your other functions...
+
+
+function sendPresetWithDelay(presetNumber) {
+  const delay = 150;
+  sendAutoFramingCommandWithDelay('off', delay, presetNumber);
+  sendAutoFramingCommand('off'); // 將自動取景設置為 OFF
+}
+
+function sendAutoFramingCommandWithDelay(mode, delay, presetNumber) {
+  let ipAddress = document.getElementById('ipAddress').value.trim();
+  if (!ipAddress) ipAddress = '192.168.0.213';
+
+  const autoFramingURL = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFraming=${mode}`;
+  setTimeout(() => {
+    location.href = autoFramingURL;
+
+    setTimeout(() => {
+      const presetURL = `http://${ipAddress}/command/presetposition.cgi?PresetCall=${presetNumber}`;
+      location.href = presetURL;
+    }, delay);
+  }, delay);
+}
+
+
+    function setButtonStyle(element, backgroundColor, textColor) {
+      element.style.backgroundColor = backgroundColor;
+      element.style.color = textColor;
+    }
+
+
+function sendAutoFramingCommand(mode) {
+  let ipAddress = document.getElementById('ipAddress').value.trim();
+  if (!ipAddress) ipAddress = '192.168.0.213';
+
+      const autoFramingURL = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFraming=${mode}`;
+      location.href = autoFramingURL;
+
+      const onButton = document.querySelector('button[data-mode="on"]');
+      const offButton = document.querySelector('button[data-mode="off"]');
+      const fullbodyButton = document.querySelector('button[data-shot-mode="fullbody"]');
+      const waistButton = document.querySelector('button[data-shot-mode="waist"]');
+      const closeupButton = document.querySelector('button[data-shot-mode="closeup"]');
+
+      setButtonStyle(onButton, '#080', '#000');
+      setButtonStyle(offButton, '#800', '#000');
+      setButtonStyle(fullbodyButton, '#444', '#AFA');
+      setButtonStyle(waistButton, '#444', '#AFA');
+      setButtonStyle(closeupButton, '#444', '#AFA');
+
+      if (mode === 'on') {
+        setButtonStyle(onButton, '#00FF00', '#000');
+      } else if (mode === 'off') {
+        setButtonStyle(offButton, '#FF0000', '#000');
+      }
+    }
+
+function sendCommands(shotMode, adjustVertical) {
+  let ipAddress = document.getElementById('ipAddress').value.trim();
+  if (!ipAddress) ipAddress = '192.168.0.213';
+
+  location.href = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFraming=off`;
+  
+  setTimeout(() => {
+    location.href = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFramingShotMode=${shotMode}`;
+    
+    setTimeout(() => {
+      location.href = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFramingAdjustObjectVertical=${adjustVertical}`;
+
+      setTimeout(() => {
+        location.href = `http://${ipAddress}/analytics/ptzautoframing.cgi?PtzAutoFraming=on`;
+      }, 300);
+    }, 100);
+  }, 300);
+
+      // 根據按鈕的模式更改背景顏色
+      const onButton = document.querySelector('button[data-mode="on"]');
+      setButtonStyle(onButton, '#080', '#000');
+
+      const offButton = document.querySelector('button[data-mode="off"]');
+      setButtonStyle(offButton, '#800', '#000');
+
+      const fullbodyButton = document.querySelector('button[data-shot-mode="fullbody"]');
+      const waistButton = document.querySelector('button[data-shot-mode="waist"]');
+      const closeupButton = document.querySelector('button[data-shot-mode="closeup"]');
+
+      setButtonStyle(fullbodyButton, '#444', '#AFA');
+      setButtonStyle(waistButton, '#444', '#AFA');
+      setButtonStyle(closeupButton, '#444', '#AFA');
+
+      if (shotMode === 'fullbody' || shotMode === 'waist' || shotMode === 'closeup') {
+        const selectedButton = document.querySelector(`button[data-shot-mode="${shotMode}"]`);
+        setButtonStyle(selectedButton, '#A44', '#000');
+        setButtonStyle(onButton, '#00FF00', '#000');
+        setButtonStyle(offButton, '#800', '#000');
+      }
+    }
+</script>
+
+</body>
+</html>
+
